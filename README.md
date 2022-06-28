@@ -11,7 +11,4 @@ CollectionView + SearchTextField
 
 Верстка UI с помощью кода без использования сторонних библиотек.
 
-
-
-https://user-images.githubusercontent.com/98119562/176147612-5e62c68f-21c0-4f11-8ca8-a8ca38e73c83.mov
-
+![Wondershare UniConverter 13_000001](https://user-images.githubusercontent.com/98119562/176149991-32b6db2a-9eba-495b-8582-d06ed25a4753.GIF)
