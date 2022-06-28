@@ -11,18 +11,8 @@ import UIKit
 class ViewController: UIViewController {
     
     var networkData = NetworkDataFromJSON()
-    var currentCoctails: Coctails!
-    var filtredCoctails: [String] = []
-    var newFiltredCoctails: [String] = []
-    
-    private var textFieldIsEmpty: Bool {
-        guard let text = textFieldView.textField.text else {return false}
-        return text.isEmpty
-    }
-
-    private var isFiltering: Bool {
-        return !textFieldIsEmpty
-    }
+    var drinks = [Drink]()
+    var filteredDrinks = [Drink]()
     
     let collectionView: UICollectionView = {
         let layout = LeftAlignedCollectionViewFlowLayout()
@@ -37,7 +27,20 @@ class ViewController: UIViewController {
         return cv
     }()
     
-    let textFieldView = CustomTextField()
+    let textFieldView: UITextField = {
+        let tf = UITextField()
+          tf.placeholder = "Enter coctail name"
+          tf.font = .systemFont(ofSize: 20)
+          tf.backgroundColor = .systemBackground
+          tf.textAlignment = .center
+          tf.layer.cornerRadius = 8
+          tf.layer.shadowColor = UIColor.lightGray.cgColor
+          tf.layer.shadowOffset = CGSize(width: 1, height: 2)
+          tf.layer.shadowOpacity = 2
+          tf.layer.shadowRadius = 8
+          tf.translatesAutoresizingMaskIntoConstraints = false
+          return tf
+    }()
     
     // MARK: - View Did Load
     override func viewDidLoad() {
@@ -50,7 +53,6 @@ class ViewController: UIViewController {
         collectionView.dataSource = self
         collectionView.dataSource = self
         
-        textFieldView.delegate = self
         textFieldView.addTarget(self, action: #selector(searchCoctail(_ :)), for: .editingChanged)
         textFieldView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -67,76 +69,38 @@ class ViewController: UIViewController {
         textFieldView.heightAnchor.constraint(equalToConstant: 40).isActive = true
         
         networkData.getData(urlString: urlString) { [unowned self] (searchResponse) in
-            guard let searchResponse = searchResponse else { return }
-            self.currentCoctails = searchResponse
-            
-            if let data = searchResponse.drinks {
-                let array = data.filter({$0.strDrink != nil}).map({$0.strDrink})
-                self.filtredCoctails = array
-                
-                print("Это полученный массив названий коктейлей из JSON: \(array)")
-                
-                print(self.currentCoctails?.drinks?.count ?? 0)
+            switch searchResponse {
+            case let .success(drinks):
+                self.drinks = drinks
+                self.filteredDrinks = drinks
                 self.collectionView.reloadData()
+            case .failure:
+                print("Error")
             }
-            
-            print("Массив названий коктейлей из JSON присвоен массиву filtred coctails:  \(self.filtredCoctails),  всего их - \(self.filtredCoctails.count)")
         }
-    }
-}
-
-// MARK: - UITextFieldDelegate
-extension ViewController: UITextFieldDelegate {
-    
-    func textFieldShouldReturn(_ textFeild: UITextField) -> Bool {
-        textFieldView.becomeFirstResponder()
-        return true
     }
     
     @objc func searchCoctail(_ textField: UITextField) {
-        
-        newFiltredCoctails.removeAll()
-        if textField.text?.count != 0 {
-            for coctail in filtredCoctails {
-                if let coctailToSearch = textField.text{
-                    let range = coctail.lowercased().range(of: coctailToSearch, options: .caseInsensitive, range: nil, locale: nil)
-                    if range != nil {
-                        self.newFiltredCoctails.append(coctail)
-                    }
-                }
-            }
+        if textField.text?.isEmpty ?? true {
+            filteredDrinks = drinks
         } else {
-            for coctail in filtredCoctails {
-                newFiltredCoctails.append(coctail)
-            }
+            filteredDrinks = drinks.filter { $0.strDrink.contains(textField.text ?? "") }
         }
         collectionView.reloadData()
     }
 }
 
+
 // MARK: - UICollectionViewDataSource
 extension ViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return currentCoctails?.drinks?.count ?? 0
+        filteredDrinks.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        var cell = collectionView.dequeueReusableCell(withReuseIdentifier: CustomItemCell.id, for: indexPath) as! CustomItemCell
-       
-        if indexPath.row < newFiltredCoctails.count {
-            cell.label.text = newFiltredCoctails[indexPath.row]
-//            collectionView.reloadData()
-//        }
-        
-//        if isFiltering && (indexPath.row < newFiltredCoctails.count) {
-//        cell.label.text = newFiltredCoctails[indexPath.row]
-            
-        } else {
-            cell.label.text = filtredCoctails[indexPath.row]
-//            let coctail = currentCoctails?.drinks?[indexPath.row]
-//            cell.label.text = coctail?.strDrink
-        }
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CustomItemCell.id, for: indexPath) as! CustomItemCell
+        cell.label.text = filteredDrinks[indexPath.row].strDrink
         
         cell.label.textColor = .white
         cell.layer.masksToBounds = true

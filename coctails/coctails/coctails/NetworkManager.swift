@@ -28,20 +28,20 @@ class NetworkDataFromJSON {
     
     let networkService = NetworkManager()
     
-    func getData(urlString: String, response: @escaping (Coctails?) -> Void) {
+    func getData(urlString: String, response: @escaping (Result<[Drink], Error>) -> Void) {
         networkService.request(urlString: urlString) { (result) in
             switch result {
             case .success(let data):
                 do {
                     let coctails = try JSONDecoder().decode(Coctails.self, from: data)
-                    response(coctails)
+                    response(.success(coctails.drinks ?? []))
                 } catch let error {
                     print("Failed to decode JSON", error)
-                    response(nil)
+                    response(.failure(error))
                 }
             case .failure(let error):
                 print("Error received requesting data: \(error.localizedDescription)")
-                response(nil)
+                response(.failure(error))
             }
         }
     }
